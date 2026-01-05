@@ -1,0 +1,16 @@
+{
+  "name": "browser-only-p2p-microblog",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/web run dev",
+    "build": "npm -ws run build",
+    "typecheck": "npm -ws run typecheck",
+    "test": "npm -ws run test",
+    "lint": "npm -ws run lint"
+  }
+}

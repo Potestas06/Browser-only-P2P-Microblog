@@ -1,0 +1,17 @@
+{
+  "name": "@p2p/core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"test:todo\"",
+    "lint": "echo \"lint:todo\""
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
