@@ -1,4 +1,6 @@
 # Browser-only P2P Microblog
+<img width="512" height="512" alt="ChatGPT Image Jan 5, 2026, 10_27_58 AM" src="https://github.com/user-attachments/assets/1e55c5e8-15cc-4a4b-b17e-8b2297d1948e" />
+
 
 ## Overview
 An invite-only, browser-based peer-to-peer microblogging network. Every client is a peer. There is no central backend, no API server, and no shared database. Content is signed, immutable, and distributed via WebRTC DataChannels using gossip and peer introductions.
