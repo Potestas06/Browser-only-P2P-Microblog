@@ -13,5 +13,9 @@
   },
   "devDependencies": {
     "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^2.3.0",
+    "dexie": "^3.2.7"
   }
 }
