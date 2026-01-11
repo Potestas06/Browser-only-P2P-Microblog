@@ -34,3 +34,13 @@ export interface SignedObject {
   payload: P2PObject;
   signature: string;
 }
+
+export interface FollowList {
+  ownerPubkey: string;
+  following: string[];
+}
+
+export interface BlockList {
+  ownerPubkey: string;
+  blocked: string[];
+}
