@@ -44,3 +44,49 @@ export interface BlockList {
   ownerPubkey: string;
   blocked: string[];
 }
+
+export interface MessageEnvelope {
+  type: string;
+  id: string;
+  from: string;
+  timestamp: number;
+  payload: unknown;
+  signature: string;
+}
+
+export interface HelloPayload {
+  protocolVersion: string;
+  capabilities: string[];
+}
+
+export interface PeerListPayload {
+  peers: PeerRecord[];
+}
+
+export interface ObjectsHavePayload {
+  objectIds: string[];
+}
+
+export interface ObjectGetPayload {
+  objectId: string;
+}
+
+export interface ObjectPutPayload {
+  object: SignedObject;
+}
+
+export interface IntroduceRequestPayload {
+  targetPubkey: string;
+}
+
+export interface IntroduceOfferPayload {
+  forPubkey: string;
+  fromPubkey: string;
+  sdp: string;
+}
+
+export interface IntroduceAnswerPayload {
+  forPubkey: string;
+  fromPubkey: string;
+  sdp: string;
+}
