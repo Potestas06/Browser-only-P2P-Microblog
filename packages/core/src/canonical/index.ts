@@ -6,7 +6,9 @@ export function canonicalize(value: unknown): string {
     return "[" + value.map(canonicalize).join(",") + "]";
   }
   const obj = value as Record<string, unknown>;
-  const keys = Object.keys(obj).sort();
+  const keys = Object.keys(obj)
+    .filter((k) => obj[k] !== undefined)
+    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   const pairs = keys.map((k) => JSON.stringify(k) + ":" + canonicalize(obj[k]));
   return "{" + pairs.join(",") + "}";
 }
