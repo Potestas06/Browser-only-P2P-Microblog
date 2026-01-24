@@ -14,3 +14,25 @@ export async function generateKeyPair(): Promise<KeyPair> {
     publicKey: bytesToHex(publicBytes),
   };
 }
+
+export async function sign(message: string, secretKeyHex: string): Promise<string> {
+  const msgBytes = new TextEncoder().encode(message);
+  const secretBytes = hexToBytes(secretKeyHex);
+  const sigBytes = await ed.signAsync(msgBytes, secretBytes);
+  return bytesToHex(sigBytes);
+}
+
+export async function verify(
+  message: string,
+  signatureHex: string,
+  publicKeyHex: string
+): Promise<boolean> {
+  try {
+    const msgBytes = new TextEncoder().encode(message);
+    const sigBytes = hexToBytes(signatureHex);
+    const pubBytes = hexToBytes(publicKeyHex);
+    return await ed.verifyAsync(sigBytes, msgBytes, pubBytes);
+  } catch {
+    return false;
+  }
+}
