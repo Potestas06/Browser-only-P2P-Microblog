@@ -36,3 +36,15 @@ export async function verify(
     return false;
   }
 }
+
+export function pubkeyToHex(bytes: Uint8Array): string {
+  return bytesToHex(bytes);
+}
+
+export function hexToPubkey(hex: string): Uint8Array {
+  return hexToBytes(hex);
+}
+
+export function isValidHexKey(hex: string, expectedByteLen: number): boolean {
+  return typeof hex === "string" && hex.length === expectedByteLen * 2 && /^[0-9a-f]+$/.test(hex);
+}
