@@ -1,10 +1,20 @@
 import * as ed from "@noble/ed25519";
 import { bytesToHex, hexToBytes } from "../utils/index.js";
 
+// ── Key types ────────────────────────────────────────────────────────────────
+
 export interface KeyPair {
   publicKey: string;
   secretKey: string;
 }
+
+export { bytesToHex as pubkeyToHex, hexToBytes as hexToPubkey };
+
+export function isValidHexKey(hex: string, expectedByteLen: number): boolean {
+  return typeof hex === "string" && hex.length === expectedByteLen * 2 && /^[0-9a-f]+$/.test(hex);
+}
+
+// ── Key generation ────────────────────────────────────────────────────────────
 
 export async function generateKeyPair(): Promise<KeyPair> {
   const secretBytes = ed.utils.randomPrivateKey();
@@ -14,6 +24,8 @@ export async function generateKeyPair(): Promise<KeyPair> {
     publicKey: bytesToHex(publicBytes),
   };
 }
+
+// ── Signing ───────────────────────────────────────────────────────────────────
 
 export async function sign(message: string, secretKeyHex: string): Promise<string> {
   const msgBytes = new TextEncoder().encode(message);
@@ -35,16 +47,4 @@ export async function verify(
   } catch {
     return false;
   }
-}
-
-export function pubkeyToHex(bytes: Uint8Array): string {
-  return bytesToHex(bytes);
-}
-
-export function hexToPubkey(hex: string): Uint8Array {
-  return hexToBytes(hex);
-}
-
-export function isValidHexKey(hex: string, expectedByteLen: number): boolean {
-  return typeof hex === "string" && hex.length === expectedByteLen * 2 && /^[0-9a-f]+$/.test(hex);
 }
