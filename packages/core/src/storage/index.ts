@@ -39,3 +39,11 @@ class P2PDatabase extends Dexie {
 }
 
 export const db = new P2PDatabase();
+
+export async function saveIdentity(identity: IdentityRecord): Promise<void> {
+  await db.identity.put(identity);
+}
+
+export async function loadIdentity(): Promise<IdentityRecord | undefined> {
+  return db.identity.get("local");
+}
