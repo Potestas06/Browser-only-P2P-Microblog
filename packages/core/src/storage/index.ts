@@ -69,6 +69,25 @@ export async function listObjects(): Promise<SignedObject[]> {
   return rows.map((r) => r.data);
 }
 
-export async function listObjectIds(): Promise<string[]> {
-  return db.objects.orderBy("objectId").keys() as Promise<string[]>;
+export async function listObjectsByAuthor(pubkey: string): Promise<SignedObject[]> {
+  const rows = await db.objects
+    .where("authorPubkey")
+    .equals(pubkey)
+    .reverse()
+    .sortBy("timestamp");
+  return rows.map((r) => r.data);
 }
+
+export async function listObjectsByType(type: string): Promise<SignedObject[]> {
+  const rows = await db.objects.where("type").equals(type).reverse().sortBy("timestamp");
+  return rows.map((r) => r.data);
+}
+
+export async function savePeer(entry: PeerEntry): Promise<void> {
+  await db.peers.put(entry);
+}
+
+export async function listPeers(): Promise<PeerEntry[]> {
+  return db.peers.toArray();
+}
+
