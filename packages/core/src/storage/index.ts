@@ -47,3 +47,28 @@ export async function saveIdentity(identity: IdentityRecord): Promise<void> {
 export async function loadIdentity(): Promise<IdentityRecord | undefined> {
   return db.identity.get("local");
 }
+
+export async function putObject(obj: SignedObject): Promise<void> {
+  const payload = obj.payload;
+  await db.objects.put({
+    objectId: obj.objectId,
+    type: payload.type,
+    authorPubkey: payload.authorPubkey,
+    timestamp: payload.timestamp,
+    data: obj,
+  });
+}
+
+export async function getObject(id: string): Promise<SignedObject | undefined> {
+  const row = await db.objects.get(id);
+  return row?.data;
+}
+
+export async function listObjects(): Promise<SignedObject[]> {
+  const rows = await db.objects.orderBy("timestamp").reverse().toArray();
+  return rows.map((r) => r.data);
+}
+
+export async function listObjectIds(): Promise<string[]> {
+  return db.objects.orderBy("objectId").keys() as Promise<string[]>;
+}
