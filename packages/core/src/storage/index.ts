@@ -32,7 +32,7 @@ class P2PDatabase extends Dexie {
     super("p2p-microblog");
     this.version(1).stores({
       identity: "id",
-      objects: "objectId, type, authorPubkey, timestamp",
+      objects: "&objectId, type, authorPubkey, timestamp",
       peers: "&pubkey, seenAt",
     });
   }
