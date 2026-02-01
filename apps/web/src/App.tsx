@@ -1,12 +1,34 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { IdentityProvider } from "./state/IdentityContext";
+import { PostsProvider } from "./state/PostsContext";
+import { PeersProvider } from "./state/PeersContext";
+import NavBar from "./components/NavBar";
+import FeedPage from "./pages/FeedPage";
+import ConnectPage from "./pages/ConnectPage";
+import IdentityPage from "./pages/IdentityPage";
+import DiagnosticsPage from "./pages/DiagnosticsPage";
+
 export default function App() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <main className="mx-auto max-w-3xl px-6 py-16">
-        <h1 className="text-3xl font-semibold">Browser-only P2P Microblog</h1>
-        <p className="mt-3 text-slate-300">
-          Setup scaffold. Implement protocol, storage, and UI logic here.
-        </p>
-      </main>
-    </div>
+    <IdentityProvider>
+      <PostsProvider>
+        <PeersProvider>
+          <BrowserRouter>
+            <div className="min-h-screen bg-slate-950 text-slate-100">
+              <NavBar />
+              <main className="mx-auto max-w-3xl px-4 py-8">
+                <Routes>
+                  <Route path="/" element={<Navigate to="/feed" replace />} />
+                  <Route path="/feed" element={<FeedPage />} />
+                  <Route path="/connect" element={<ConnectPage />} />
+                  <Route path="/identity" element={<IdentityPage />} />
+                  <Route path="/diagnostics" element={<DiagnosticsPage />} />
+                </Routes>
+              </main>
+            </div>
+          </BrowserRouter>
+        </PeersProvider>
+      </PostsProvider>
+    </IdentityProvider>
   );
 }
