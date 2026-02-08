@@ -1,10 +1,18 @@
+import { useState } from "react";
 import { useIdentity } from "../state/IdentityContext";
 
 export default function IdentityPage() {
-  const { identity } = useIdentity();
+  const { identity, setUsername } = useIdentity();
+  const [copied, setCopied] = useState(false);
 
   if (!identity) {
     return <p className="text-slate-400">Generating identity…</p>;
+  }
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(identity!.publicKey);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   return (
@@ -14,6 +22,12 @@ export default function IdentityPage() {
         <div>
           <p className="text-xs text-slate-500 mb-1">Public Key</p>
           <p className="font-mono text-xs text-slate-300 break-all">{identity.publicKey}</p>
+          <button
+            onClick={handleCopy}
+            className="mt-2 rounded border border-slate-600 px-3 py-1 text-xs hover:bg-slate-800"
+          >
+            {copied ? "Copied!" : "Copy"}
+          </button>
         </div>
         {identity.username && (
           <div>
