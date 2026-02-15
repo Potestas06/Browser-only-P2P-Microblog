@@ -18,6 +18,12 @@ export class PeerConnection {
       this.stateHandler?.(this.pc.connectionState);
     };
 
+    this.pc.oniceconnectionstatechange = () => {
+      if (this.pc.iceConnectionState === "failed") {
+        this.pc.restartIce();
+      }
+    };
+
     this.pc.ondatachannel = (event) => {
       this.setupChannel(event.channel);
     };
@@ -33,6 +39,9 @@ export class PeerConnection {
         // ignore malformed messages
       }
     };
+    channel.onerror = (event) => {
+      console.warn("DataChannel error", event);
+    };
   }
 
   onMessage(handler: MessageHandler) {
@@ -41,6 +50,28 @@ export class PeerConnection {
 
   onStateChange(handler: StateChangeHandler) {
     this.stateHandler = handler;
+  }
+
+  waitForOpen(): Promise<void> {
+    if (this.channel?.readyState === "open") return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Connection timed out")), 30_000);
+      const check = () => {
+        if (this.pc.connectionState === "connected") {
+          clearTimeout(timer);
+          this.pc.removeEventListener("connectionstatechange", check);
+          resolve();
+        } else if (
+          this.pc.connectionState === "failed" ||
+          this.pc.connectionState === "closed"
+        ) {
+          clearTimeout(timer);
+          this.pc.removeEventListener("connectionstatechange", check);
+          reject(new Error("Connection failed"));
+        }
+      };
+      this.pc.addEventListener("connectionstatechange", check);
+    });
   }
 
   send(data: unknown) {
