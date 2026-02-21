@@ -42,6 +42,12 @@ export class PeerConnection {
     channel.onerror = (event) => {
       console.warn("DataChannel error", event);
     };
+    channel.onclose = () => {
+      this.stateHandler?.("closed");
+    };
+    channel.onopen = () => {
+      this.stateHandler?.(this.pc.connectionState);
+    };
   }
 
   onMessage(handler: MessageHandler) {
