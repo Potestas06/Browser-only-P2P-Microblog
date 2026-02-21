@@ -78,11 +78,17 @@ export async function applyAnswer(
   return answer.pubkey;
 }
 
-async function waitForIceGathering(pc: RTCPeerConnection): Promise<void> {
+async function waitForIceGathering(pc: RTCPeerConnection, timeoutMs = 10_000): Promise<void> {
   if (pc.iceGatheringState === "complete") return;
   return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      pc.removeEventListener("icegatheringstatechange", check);
+      resolve();
+    }, timeoutMs);
+
     const check = () => {
       if (pc.iceGatheringState === "complete") {
+        clearTimeout(timer);
         pc.removeEventListener("icegatheringstatechange", check);
         resolve();
       }
