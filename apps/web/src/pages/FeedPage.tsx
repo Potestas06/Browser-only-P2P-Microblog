@@ -56,6 +56,9 @@ export default function FeedPage() {
         </div>
       </div>
       <div className="space-y-3">
+        {posts.length === 0 && (
+          <p className="text-sm text-slate-500 text-center py-8">No posts yet. Write the first one!</p>
+        )}
         {posts.map((p) => (
           <PostCard key={p.objectId} post={p} />
         ))}
