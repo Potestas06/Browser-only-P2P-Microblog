@@ -86,7 +86,10 @@ export async function handleMessage(
   }
 
   const valid = await verifyEnvelope(env);
-  if (!valid) return;
+  if (!valid) {
+    console.warn("Rejected envelope with invalid signature from", env?.from?.slice(0, 12));
+    return;
+  }
 
   const handler = handlers[env.type];
   if (handler) await handler(env, conn, identity);
