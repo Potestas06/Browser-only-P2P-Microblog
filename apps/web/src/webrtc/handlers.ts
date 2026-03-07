@@ -5,10 +5,13 @@ import type {
   ObjectPutPayload,
   ObjectGetPayload,
   ObjectsHavePayload,
+  PeerListPayload,
+  PeerRecord,
 } from "@p2p/core";
-import { putObject, getObject, listObjectIds } from "@p2p/core";
+import { putObject, getObject, listObjectIds, savePeer } from "@p2p/core";
 import type { PeerConnection } from "./connection";
 import type { IdentityRecord } from "@p2p/core";
+import { handleObjectsHave } from "./gossip";
 
 export type HandlerFn = (
   env: MessageEnvelope,
@@ -108,4 +111,15 @@ export const defaultHandlers: MessageHandlers = {
     const obj = await getObject(payload.objectId);
     if (obj) await sendObjectPut(conn, identity, obj);
   },
+  objects_have: async (env, conn, identity) => {
+    await handleObjectsHave(env, conn, identity);
+  },
+  peer_list: async (env) => {
+    const payload = env.payload as PeerListPayload;
+    if (!payload?.peers) return;
+    for (const peer of payload.peers) {
+      await savePeer({ pubkey: peer.pubkey, seenAt: peer.seenAt });
+    }
+  },
 };
+
