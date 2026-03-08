@@ -75,7 +75,9 @@ export async function handlePeerList(
   if (!payload?.peers) return;
 
   for (const peer of payload.peers) {
+    const existing = await listPeers();
+    const isNew = !existing.some((p) => p.pubkey === peer.pubkey);
     await savePeer({ pubkey: peer.pubkey, seenAt: peer.seenAt });
-    onNewPeer(peer);
+    if (isNew) onNewPeer(peer);
   }
 }
