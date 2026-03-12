@@ -4,6 +4,7 @@ import { usePeers } from "../state/PeersContext";
 import { usePosts } from "../state/PostsContext";
 import { createOffer, createAnswer, applyAnswer } from "../webrtc/invite";
 import { sendHello, sendObjectsHave, handleMessage, defaultHandlers } from "../webrtc/handlers";
+import { sendPeerList } from "../webrtc/gossip";
 import type { PeerConnection } from "../webrtc/connection";
 
 export default function ConnectPage() {
@@ -38,6 +39,7 @@ export default function ConnectPage() {
       if (state === "connected") {
         sendHello(conn, identity!);
         sendObjectsHave(conn, identity!);
+        sendPeerList(conn, identity!);
       }
     });
   }
