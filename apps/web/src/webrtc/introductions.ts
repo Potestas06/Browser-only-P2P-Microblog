@@ -34,7 +34,7 @@ export async function handleIntroduceRequest(
   const target = getPeer(payload.targetPubkey);
   if (!target) return;
 
-  const { inviteCode } = await createOffer(identity.publicKey);
+  const { connection, inviteCode } = await createOffer(identity.publicKey);
   const offerPayload: IntroduceOfferPayload = {
     forPubkey: env.from,
     fromPubkey: identity.publicKey,
@@ -47,6 +47,7 @@ export async function handleIntroduceRequest(
     identity.secretKey
   );
   target.send(offerEnv);
+  return connection as unknown as void;
 }
 
 export async function handleIntroduceOffer(
