@@ -82,6 +82,10 @@ export async function handleIntroduceAnswer(
   const conn = getPendingConn(payload.fromPubkey);
   if (!conn) return;
 
-  const remotePubkey = await applyAnswer(conn, payload.sdp);
-  onConnected(remotePubkey, conn);
+  try {
+    const remotePubkey = await applyAnswer(conn, payload.sdp);
+    onConnected(remotePubkey, conn);
+  } catch (err) {
+    console.warn("Failed to apply introduction answer", err);
+  }
 }
