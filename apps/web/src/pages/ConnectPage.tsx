@@ -5,7 +5,14 @@ import { usePosts } from "../state/PostsContext";
 import { createOffer, createAnswer, applyAnswer } from "../webrtc/invite";
 import { sendHello, sendObjectsHave, handleMessage, defaultHandlers } from "../webrtc/handlers";
 import { sendPeerList } from "../webrtc/gossip";
-import type { PeerConnection } from "../webrtc/connection";
+import {
+  sendIntroduceRequest,
+  handleIntroduceRequest,
+  handleIntroduceOffer,
+  handleIntroduceAnswer,
+} from "../webrtc/introductions";
+
+const pendingIntroConns = new Map<string, PeerConnection>();
 
 export default function ConnectPage() {
   const { identity } = useIdentity();
@@ -32,6 +39,20 @@ export default function ConnectPage() {
         object_put: async (env) => {
           await defaultHandlers.object_put(env, conn, identity!);
           await refresh();
+        },
+        introduce_request: async (env) => {
+          await handleIntroduceRequest(env, conn, identity!, (pk) =>
+            peers.get(pk) ?? undefined
+          );
+        },
+        introduce_offer: async (env) => {
+          await handleIntroduceOffer(env, conn, identity!);
+        },
+        introduce_answer: async (env) => {
+          await handleIntroduceAnswer(env, (pk) => pendingIntroConns.get(pk), (pk, c) => {
+            addPeer(pk, c);
+            pendingIntroConns.delete(pk);
+          });
         },
       });
     });
