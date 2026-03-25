@@ -35,6 +35,13 @@ class P2PDatabase extends Dexie {
       objects: "&objectId, type, authorPubkey, timestamp",
       peers: "&pubkey, seenAt",
     });
+    this.version(2).stores({
+      identity: "id",
+      objects: "&objectId, type, authorPubkey, timestamp",
+      peers: "&pubkey, seenAt",
+      follows: "&ownerPubkey",
+      blocks: "&ownerPubkey",
+    });
   }
 }
 
@@ -87,7 +94,22 @@ export async function savePeer(entry: PeerEntry): Promise<void> {
   await db.peers.put(entry);
 }
 
-export async function listPeers(): Promise<PeerEntry[]> {
-  return db.peers.toArray();
+export async function getFollowList(ownerPubkey: string): Promise<FollowList> {
+  const row = await db.follows.get(ownerPubkey);
+  return row ?? { ownerPubkey, following: [] };
 }
+
+export async function saveFollowList(list: FollowList): Promise<void> {
+  await db.follows.put(list);
+}
+
+export async function getBlockList(ownerPubkey: string): Promise<BlockList> {
+  const row = await db.blocks.get(ownerPubkey);
+  return row ?? { ownerPubkey, blocked: [] };
+}
+
+export async function saveBlockList(list: BlockList): Promise<void> {
+  await db.blocks.put(list);
+}
+
 
