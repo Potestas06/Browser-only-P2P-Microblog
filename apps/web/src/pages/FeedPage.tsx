@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useIdentity } from "../state/IdentityContext";
 import { usePosts } from "../state/PostsContext";
-import { canonicalize, objectId, sign, getFollowList } from "@p2p/core";
+import { canonicalize, objectId, sign, getFollowList, getBlockList } from "@p2p/core";
 import type { Post, SignedObject } from "@p2p/core";
 import PostCard from "../components/PostCard";
 
@@ -11,20 +11,28 @@ export default function FeedPage() {
   const [content, setContent] = useState("");
   const [posting, setPosting] = useState(false);
   const [following, setFollowing] = useState<string[]>([]);
+  const [blocked, setBlocked] = useState<string[]>([]);
   const [filterFollowing, setFilterFollowing] = useState(false);
 
   useEffect(() => {
     if (!identity) return;
-    getFollowList(identity.publicKey).then((list) => setFollowing(list.following));
+    Promise.all([
+      getFollowList(identity.publicKey),
+      getBlockList(identity.publicKey),
+    ]).then(([follows, blocks]) => {
+      setFollowing(follows.following);
+      setBlocked(blocks.blocked);
+    });
   }, [identity]);
 
-  const displayPosts = filterFollowing
-    ? posts.filter(
-        (p) =>
-          p.payload.authorPubkey === identity?.publicKey ||
-          following.includes(p.payload.authorPubkey)
-      )
-    : posts;
+  const displayPosts = posts.filter((p) => {
+    if (blocked.includes(p.payload.authorPubkey)) return false;
+    if (!filterFollowing) return true;
+    return (
+      p.payload.authorPubkey === identity?.publicKey ||
+      following.includes(p.payload.authorPubkey)
+    );
+  });
 
   async function handlePost() {
     if (!identity || !content.trim() || posting) return;
