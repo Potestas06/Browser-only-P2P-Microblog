@@ -1,11 +1,13 @@
 export type MessageHandler = (data: unknown) => void;
 export type StateChangeHandler = (state: RTCPeerConnectionState) => void;
+export type ErrorHandler = (err: Event) => void;
 
 export class PeerConnection {
   private pc: RTCPeerConnection;
   private channel: RTCDataChannel | null = null;
   private messageHandler: MessageHandler | null = null;
   private stateHandler: StateChangeHandler | null = null;
+  private errorHandler: ErrorHandler | null = null;
   remotePubkey: string;
 
   constructor(remotePubkey: string, config?: RTCConfiguration) {
@@ -41,6 +43,8 @@ export class PeerConnection {
     };
     channel.onerror = (event) => {
       console.warn("DataChannel error", event);
+      this.errorHandler?.(event);
+      this.stateHandler?.("failed");
     };
     channel.onclose = () => {
       this.stateHandler?.("closed");
@@ -57,6 +61,53 @@ export class PeerConnection {
   onStateChange(handler: StateChangeHandler) {
     this.stateHandler = handler;
   }
+
+  onError(handler: ErrorHandler) {
+    this.errorHandler = handler;
+  }
+
+  waitForOpen(): Promise<void> {
+    if (this.channel?.readyState === "open") return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Connection timed out")), 30_000);
+      const check = () => {
+        if (this.pc.connectionState === "connected") {
+          clearTimeout(timer);
+          this.pc.removeEventListener("connectionstatechange", check);
+          resolve();
+        } else if (
+          this.pc.connectionState === "failed" ||
+          this.pc.connectionState === "closed"
+        ) {
+          clearTimeout(timer);
+          this.pc.removeEventListener("connectionstatechange", check);
+          reject(new Error("Connection failed"));
+        }
+      };
+      this.pc.addEventListener("connectionstatechange", check);
+    });
+  }
+
+  send(data: unknown) {
+    if (this.channel?.readyState === "open") {
+      this.channel.send(JSON.stringify(data));
+    }
+  }
+
+  get connectionState(): RTCPeerConnectionState {
+    return this.pc.connectionState;
+  }
+
+  getPeerConnection(): RTCPeerConnection {
+    return this.pc;
+  }
+
+  close() {
+    this.channel?.close();
+    this.pc.close();
+  }
+}
+
 
   waitForOpen(): Promise<void> {
     if (this.channel?.readyState === "open") return Promise.resolve();

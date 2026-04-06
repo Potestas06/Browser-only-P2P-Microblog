@@ -16,7 +16,7 @@ const pendingIntroConns = new Map<string, PeerConnection>();
 
 export default function ConnectPage() {
   const { identity } = useIdentity();
-  const { addPeer } = usePeers();
+  const { addPeer, removePeer, peers } = usePeers();
   const { refresh } = usePosts();
 
   const [step, setStep] = useState<"choose" | "offer" | "answer">("choose");
@@ -62,6 +62,13 @@ export default function ConnectPage() {
         sendObjectsHave(conn, identity!);
         sendPeerList(conn, identity!);
       }
+      if (state === "failed" || state === "closed") {
+        removePeer(conn.remotePubkey);
+      }
+    });
+    conn.onError(() => {
+      console.warn("DataChannel error for peer", conn.remotePubkey);
+      removePeer(conn.remotePubkey);
     });
   }
 
