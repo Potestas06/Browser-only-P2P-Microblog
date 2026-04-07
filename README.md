@@ -195,11 +195,42 @@ Done when
 - Blocklists are local or optionally subscribed
 - Rate limits and message size limits protect peers
 
-## Local Development
-- dev: start web client
-- build: production build
-- test: core unit tests
-- lint: linting
+## Getting Started
+
+### Prerequisites
+- Node.js 20+
+- npm 10+
+
+### Install dependencies
+```bash
+npm install
+```
+
+### Start the development server
+```bash
+npm run dev
+```
+Open http://localhost:5173 in your browser. A cryptographic identity is generated automatically on first load and stored in IndexedDB.
+
+### Build for production
+```bash
+npm run build
+```
+
+### Type-check
+```bash
+npm run typecheck
+```
+
+## How the Invite Flow Works
+
+Since there is no server, peers connect by exchanging **invite codes** manually (copy/paste or QR code):
+
+1. **Person A** opens the Connect page and clicks **Create Invite** → copies the offer code
+2. **Person B** opens the Connect page, pastes the offer code, and clicks **Answer** → copies the answer code
+3. **Person A** pastes the answer code and clicks **Apply Answer**
+
+A WebRTC DataChannel is now open. Both peers exchange their object stores and peer lists automatically. After that, further peers can join via automatic introductions — no additional manual steps required.
 
 ## Future Ideas
 - Topic-based feeds
