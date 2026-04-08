@@ -94,6 +94,15 @@ export async function savePeer(entry: PeerEntry): Promise<void> {
   await db.peers.put(entry);
 }
 
+export async function listPeers(): Promise<PeerEntry[]> {
+  return db.peers.toArray();
+}
+
+export async function listObjectIds(): Promise<string[]> {
+  const rows = await db.objects.toCollection().primaryKeys();
+  return rows as string[];
+}
+
 export async function getFollowList(ownerPubkey: string): Promise<FollowList> {
   const row = await db.follows.get(ownerPubkey);
   return row ?? { ownerPubkey, following: [] };
