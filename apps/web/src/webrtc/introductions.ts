@@ -1,4 +1,4 @@
-import { createEnvelope, parseEnvelope, verifyEnvelope } from "@p2p/core";
+import { createEnvelope } from "@p2p/core";
 import type {
   MessageEnvelope,
   IntroduceRequestPayload,
@@ -7,14 +7,15 @@ import type {
 } from "@p2p/core";
 import type { PeerConnection } from "./connection";
 import type { IdentityRecord } from "@p2p/core";
-import { createOffer, createAnswer, applyAnswer } from "./invite";
+import { createAnswer, applyAnswer } from "./invite";
 
 export async function sendIntroduceRequest(
   conn: PeerConnection,
   identity: IdentityRecord,
-  targetPubkey: string
+  targetPubkey: string,
+  sdp: string
 ): Promise<void> {
-  const payload: IntroduceRequestPayload = { targetPubkey };
+  const payload: IntroduceRequestPayload = { targetPubkey, sdp };
   const envelope = await createEnvelope(
     "introduce_request",
     payload,
@@ -24,6 +25,10 @@ export async function sendIntroduceRequest(
   conn.send(envelope);
 }
 
+/**
+ * B (broker) receives introduce_request from A and forwards A's SDP offer to C.
+ * B does NOT create a new connection — it only relays A's offer.
+ */
 export async function handleIntroduceRequest(
   env: MessageEnvelope,
   conn: PeerConnection,
@@ -31,14 +36,15 @@ export async function handleIntroduceRequest(
   getPeer: (pubkey: string) => PeerConnection | undefined
 ): Promise<void> {
   const payload = env.payload as IntroduceRequestPayload;
+  if (!payload?.targetPubkey || !payload?.sdp) return;
+
   const target = getPeer(payload.targetPubkey);
   if (!target) return;
 
-  const { connection, inviteCode } = await createOffer(identity.publicKey);
   const offerPayload: IntroduceOfferPayload = {
-    forPubkey: env.from,
-    fromPubkey: identity.publicKey,
-    sdp: inviteCode,
+    forPubkey: payload.targetPubkey,
+    fromPubkey: env.from,
+    sdp: payload.sdp,
   };
   const offerEnv = await createEnvelope(
     "introduce_offer",
@@ -47,18 +53,26 @@ export async function handleIntroduceRequest(
     identity.secretKey
   );
   target.send(offerEnv);
-  return connection as unknown as void;
 }
 
+/**
+ * C receives introduce_offer (A's SDP offer forwarded by B).
+ * C creates an answer and sends it back to B for forwarding to A.
+ * Returns the new PeerConnection (A→C) so the caller can wire it up.
+ */
 export async function handleIntroduceOffer(
   env: MessageEnvelope,
   conn: PeerConnection,
   identity: IdentityRecord
-): Promise<void> {
+): Promise<{ connection: PeerConnection; remotePubkey: string } | null> {
   const payload = env.payload as IntroduceOfferPayload;
-  if (payload.forPubkey !== identity.publicKey) return;
+  if (payload.forPubkey !== identity.publicKey) return null;
 
-  const { inviteCode } = await createAnswer(identity.publicKey, payload.sdp);
+  const { connection, inviteCode, remotePubkey } = await createAnswer(
+    identity.publicKey,
+    payload.sdp
+  );
+
   const answerPayload: IntroduceAnswerPayload = {
     forPubkey: payload.fromPubkey,
     fromPubkey: identity.publicKey,
@@ -71,20 +85,44 @@ export async function handleIntroduceOffer(
     identity.secretKey
   );
   conn.send(answerEnv);
+
+  return { connection, remotePubkey };
 }
 
+/**
+ * Handles introduce_answer:
+ * - Broker (B): forPubkey !== identity.publicKey → forward to A.
+ * - Requester (A): forPubkey === identity.publicKey → apply answer.
+ */
 export async function handleIntroduceAnswer(
   env: MessageEnvelope,
+  identity: IdentityRecord,
+  getPeer: (pubkey: string) => PeerConnection | undefined,
   getPendingConn: (pubkey: string) => PeerConnection | undefined,
   onConnected: (pubkey: string, conn: PeerConnection) => void
 ): Promise<void> {
   const payload = env.payload as IntroduceAnswerPayload;
-  const conn = getPendingConn(payload.fromPubkey);
-  if (!conn) return;
+
+  if (payload.forPubkey !== identity.publicKey) {
+    const target = getPeer(payload.forPubkey);
+    if (!target) return;
+    // Re-sign so A's env.from check passes (A sees B as the sender, not C)
+    const forwardEnv = await createEnvelope(
+      "introduce_answer",
+      payload,
+      identity.publicKey,
+      identity.secretKey
+    );
+    target.send(forwardEnv);
+    return;
+  }
+
+  const pendingConn = getPendingConn(payload.fromPubkey);
+  if (!pendingConn) return;
 
   try {
-    const remotePubkey = await applyAnswer(conn, payload.sdp);
-    onConnected(remotePubkey, conn);
+    const remotePubkey = await applyAnswer(pendingConn, payload.sdp);
+    onConnected(remotePubkey, pendingConn);
   } catch (err) {
     console.warn("Failed to apply introduction answer", err);
   }

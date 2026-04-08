@@ -1,4 +1,4 @@
-import type { SignedObject, Post, Reply } from "@p2p/core";
+import type { SignedObject, Post, Reply, Repost } from "@p2p/core";
 
 interface Props {
   post: SignedObject;
@@ -6,7 +6,8 @@ interface Props {
 }
 
 export default function PostCard({ post, parentPost }: Props) {
-  const payload = post.payload as Post | Reply;
+  const payload = post.payload as Post | Reply | Repost;
+  const content = payload.type !== "repost" ? payload.content : undefined;
 
   return (
     <article className="rounded-lg border border-slate-700 bg-slate-900 p-4 space-y-2">
@@ -25,8 +26,11 @@ export default function PostCard({ post, parentPost }: Props) {
         <span className="text-xs text-slate-500">
           {new Date(payload.timestamp).toLocaleString()}
         </span>
+        {payload.type === "repost" && (
+          <span className="text-xs text-slate-500 italic">repost of {payload.targetId.slice(0, 12)}…</span>
+        )}
       </div>
-      <p className="text-sm text-slate-200">{payload.content}</p>
+      {content !== undefined && <p className="text-sm text-slate-200">{content}</p>}
     </article>
   );
 }

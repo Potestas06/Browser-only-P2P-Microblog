@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useIdentity } from "../state/IdentityContext";
 import { usePeers } from "../state/PeersContext";
 import { usePosts } from "../state/PostsContext";
@@ -18,6 +18,8 @@ export default function ConnectPage() {
   const { identity } = useIdentity();
   const { addPeer, removePeer, peers } = usePeers();
   const { refresh } = usePosts();
+  const peersRef = useRef(peers);
+  useEffect(() => { peersRef.current = peers; }, [peers]);
 
   const [step, setStep] = useState<"choose" | "offer" | "answer">("choose");
   const [offerCode, setOfferCode] = useState("");
@@ -42,17 +44,27 @@ export default function ConnectPage() {
         },
         introduce_request: async (env) => {
           await handleIntroduceRequest(env, conn, identity!, (pk) =>
-            peers.get(pk) ?? undefined
+            peersRef.current.get(pk) ?? undefined
           );
         },
         introduce_offer: async (env) => {
-          await handleIntroduceOffer(env, conn, identity!);
+          const result = await handleIntroduceOffer(env, conn, identity!);
+          if (result) {
+            wireConnection(result.connection);
+            addPeer(result.remotePubkey, result.connection);
+          }
         },
         introduce_answer: async (env) => {
-          await handleIntroduceAnswer(env, (pk) => pendingIntroConns.get(pk), (pk, c) => {
-            addPeer(pk, c);
-            pendingIntroConns.delete(pk);
-          });
+          await handleIntroduceAnswer(
+            env,
+            identity!,
+            (pk) => peersRef.current.get(pk) ?? undefined,
+            (pk) => pendingIntroConns.get(pk),
+            (pk, c) => {
+              addPeer(pk, c);
+              pendingIntroConns.delete(pk);
+            }
+          );
         },
       });
     });
@@ -64,6 +76,7 @@ export default function ConnectPage() {
       }
       if (state === "failed" || state === "closed") {
         removePeer(conn.remotePubkey);
+        pendingIntroConns.delete(conn.remotePubkey);
       }
     });
     conn.onError(() => {

@@ -1,4 +1,4 @@
-import { createEnvelope, parseEnvelope, verifyEnvelope } from "@p2p/core";
+import { createEnvelope, parseEnvelope, verifyEnvelope, verify, canonicalize } from "@p2p/core";
 import type {
   MessageEnvelope,
   HelloPayload,
@@ -94,6 +94,11 @@ export async function handleMessage(
     return;
   }
 
+  if (env.from !== conn.remotePubkey) {
+    console.warn("Rejected envelope: claimed sender does not match connection peer");
+    return;
+  }
+
   const handler = handlers[env.type];
   if (handler) await handler(env, conn, identity);
 }
@@ -101,9 +106,15 @@ export async function handleMessage(
 export const defaultHandlers: MessageHandlers = {
   object_put: async (env) => {
     const payload = env.payload as ObjectPutPayload;
-    if (payload?.object) {
-      await putObject(payload.object);
+    if (!payload?.object) return;
+    const obj = payload.object;
+    const signable = canonicalize(obj.payload);
+    const ok = await verify(signable, obj.signature, (obj.payload as { authorPubkey: string }).authorPubkey);
+    if (!ok) {
+      console.warn("Rejected object_put: invalid object signature");
+      return;
     }
+    await putObject(obj);
   },
   object_get: async (env, conn, identity) => {
     const payload = env.payload as ObjectGetPayload;

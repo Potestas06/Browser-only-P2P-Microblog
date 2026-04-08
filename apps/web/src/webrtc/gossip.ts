@@ -1,4 +1,4 @@
-import { createEnvelope, parseEnvelope, verifyEnvelope } from "@p2p/core";
+import { createEnvelope } from "@p2p/core";
 import type {
   MessageEnvelope,
   ObjectsHavePayload,
@@ -6,25 +6,9 @@ import type {
   PeerListPayload,
   PeerRecord,
 } from "@p2p/core";
-import { listObjectIds, getObject, savePeer, listPeers, putObject } from "@p2p/core";
+import { listObjectIds, savePeer, listPeers } from "@p2p/core";
 import type { PeerConnection } from "./connection";
 import type { IdentityRecord } from "@p2p/core";
-import { sendObjectPut } from "./handlers";
-
-export async function sendObjectsHave(
-  conn: PeerConnection,
-  identity: IdentityRecord
-): Promise<void> {
-  const objectIds = await listObjectIds();
-  const payload: ObjectsHavePayload = { objectIds };
-  const envelope = await createEnvelope(
-    "objects_have",
-    payload,
-    identity.publicKey,
-    identity.secretKey
-  );
-  conn.send(envelope);
-}
 
 export async function handleObjectsHave(
   env: MessageEnvelope,
@@ -74,9 +58,10 @@ export async function handlePeerList(
   const payload = env.payload as PeerListPayload;
   if (!payload?.peers) return;
 
+  const existing = await listPeers();
+  const existingKeys = new Set(existing.map((p) => p.pubkey));
   for (const peer of payload.peers) {
-    const existing = await listPeers();
-    const isNew = !existing.some((p) => p.pubkey === peer.pubkey);
+    const isNew = !existingKeys.has(peer.pubkey);
     await savePeer({ pubkey: peer.pubkey, seenAt: peer.seenAt });
     if (isNew) onNewPeer(peer);
   }

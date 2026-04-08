@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { useIdentity } from "../state/IdentityContext";
 import { usePosts } from "../state/PostsContext";
+import { usePeers } from "../state/PeersContext";
 import { canonicalize, objectId, sign, getFollowList, getBlockList } from "@p2p/core";
 import type { Post, Reply, SignedObject } from "@p2p/core";
 import PostCard from "../components/PostCard";
+import { sendObjectPut } from "../webrtc/handlers";
 
 export default function FeedPage() {
   const { identity } = useIdentity();
   const { posts, addPost } = usePosts();
+  const { peers } = usePeers();
   const [content, setContent] = useState("");
   const [posting, setPosting] = useState(false);
   const [following, setFollowing] = useState<string[]>([]);
@@ -55,6 +58,9 @@ export default function FeedPage() {
       const signature = await sign(signable, identity.secretKey);
       const signed: SignedObject = { objectId: id, payload, signature };
       await addPost(signed);
+      for (const [, conn] of peers) {
+        sendObjectPut(conn, identity, signed);
+      }
       setContent("");
     } finally {
       setPosting(false);

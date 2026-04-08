@@ -77,6 +77,7 @@ export interface ObjectPutPayload {
 
 export interface IntroduceRequestPayload {
   targetPubkey: string;
+  sdp: string;
 }
 
 export interface IntroduceOfferPayload {

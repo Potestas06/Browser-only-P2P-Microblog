@@ -18,7 +18,7 @@ export async function createEnvelope(
 export function parseEnvelope(raw: unknown): MessageEnvelope {
   if (typeof raw !== "object" || raw === null) throw new Error("Invalid envelope");
   const env = raw as Record<string, unknown>;
-  if (!env.type || !env.id || !env.from || !env.timestamp || !env.signature) {
+  if (!env.type || !env.id || !env.from || typeof env.timestamp !== "number" || !env.signature || env.payload === undefined) {
     throw new Error("Missing required envelope fields");
   }
   return raw as MessageEnvelope;
