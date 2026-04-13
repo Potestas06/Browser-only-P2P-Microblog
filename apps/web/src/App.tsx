@@ -3,6 +3,7 @@ import { IdentityProvider } from "./state/IdentityContext";
 import { PostsProvider } from "./state/PostsContext";
 import { PeersProvider } from "./state/PeersContext";
 import NavBar from "./components/NavBar";
+import PeerNetwork from "./components/PeerNetwork";
 import FeedPage from "./pages/FeedPage";
 import ConnectPage from "./pages/ConnectPage";
 import IdentityPage from "./pages/IdentityPage";
@@ -14,6 +15,7 @@ export default function App() {
       <PostsProvider>
         <PeersProvider>
           <BrowserRouter>
+            <PeerNetwork />
             <div className="min-h-screen bg-slate-950 text-slate-100">
               <NavBar />
               <main className="mx-auto max-w-3xl px-4 py-8">

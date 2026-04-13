@@ -1,25 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useIdentity } from "../state/IdentityContext";
 import { usePeers } from "../state/PeersContext";
-import { usePosts } from "../state/PostsContext";
 import { createOffer, createAnswer, applyAnswer } from "../webrtc/invite";
-import { sendHello, sendObjectsHave, handleMessage, defaultHandlers } from "../webrtc/handlers";
-import { sendPeerList } from "../webrtc/gossip";
-import {
-  handleIntroduceRequest,
-  handleIntroduceOffer,
-  handleIntroduceAnswer,
-} from "../webrtc/introductions";
+import { useWireConnection } from "../webrtc/useWireConnection";
 import type { PeerConnection } from "../webrtc/connection";
-
-const pendingIntroConns = new Map<string, PeerConnection>();
 
 export default function ConnectPage() {
   const { identity } = useIdentity();
-  const { addPeer, removePeer, peers } = usePeers();
-  const { refresh } = usePosts();
-  const peersRef = useRef(peers);
-  useEffect(() => { peersRef.current = peers; }, [peers]);
+  const { addPeer } = usePeers();
+  const { wireConnection } = useWireConnection();
 
   const [step, setStep] = useState<"choose" | "offer" | "answer">("choose");
   const [offerCode, setOfferCode] = useState("");
@@ -29,61 +18,6 @@ export default function ConnectPage() {
   const [status, setStatus] = useState("");
 
   if (!identity) return <p className="text-slate-400">Loading...</p>;
-
-  function wireConnection(conn: PeerConnection) {
-    conn.onMessage((data) => {
-      handleMessage(data, conn, identity!, {
-        ...defaultHandlers,
-        objects_have: async (env) => {
-          await defaultHandlers.objects_have?.(env, conn, identity!);
-          await refresh();
-        },
-        object_put: async (env) => {
-          await defaultHandlers.object_put(env, conn, identity!);
-          await refresh();
-        },
-        introduce_request: async (env) => {
-          await handleIntroduceRequest(env, conn, identity!, (pk) =>
-            peersRef.current.get(pk) ?? undefined
-          );
-        },
-        introduce_offer: async (env) => {
-          const result = await handleIntroduceOffer(env, conn, identity!);
-          if (result) {
-            wireConnection(result.connection);
-            addPeer(result.remotePubkey, result.connection);
-          }
-        },
-        introduce_answer: async (env) => {
-          await handleIntroduceAnswer(
-            env,
-            identity!,
-            (pk) => peersRef.current.get(pk) ?? undefined,
-            (pk) => pendingIntroConns.get(pk),
-            (pk, c) => {
-              addPeer(pk, c);
-              pendingIntroConns.delete(pk);
-            }
-          );
-        },
-      });
-    });
-    conn.onStateChange((state) => {
-      if (state === "connected") {
-        sendHello(conn, identity!);
-        sendObjectsHave(conn, identity!);
-        sendPeerList(conn, identity!);
-      }
-      if (state === "failed" || state === "closed") {
-        removePeer(conn.remotePubkey);
-        pendingIntroConns.delete(conn.remotePubkey);
-      }
-    });
-    conn.onError(() => {
-      console.warn("DataChannel error for peer", conn.remotePubkey);
-      removePeer(conn.remotePubkey);
-    });
-  }
 
   async function handleCreateOffer() {
     const { connection, inviteCode } = await createOffer(identity!.publicKey);
@@ -123,6 +57,10 @@ export default function ConnectPage() {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Connect to a Peer</h2>
+      <p className="text-sm text-slate-400">
+        First time connecting to a new peer requires a one-time manual invite exchange.
+        After that, reconnection is automatic — even after refreshing the page.
+      </p>
 
       {step === "choose" && (
         <div className="flex gap-4">
